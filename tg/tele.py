@@ -5,8 +5,8 @@ from telethon import TelegramClient
 from telethon.errors.rpcerrorlist import ChannelInvalidError, ChannelPrivateError
 
 # --- НАСТРОЙКИ ---
-api_id = 'xxx'
-api_hash = 'zxczxczxc'
+api_id = 'xxx'            # заменить id тут
+api_hash = 'zxczxczxc'    # и тут
 session_name = 'telegram_ha_session'
 
 # --- Инициализация ---
@@ -24,7 +24,7 @@ def clean_message_text(text):
 @app.route('/get_messages', methods=['GET'])
 async def get_telegram_messages():
     global client
-    # Проверка, что клиент существует
+
     if not client:
         return jsonify({"error": "Telegram client not initialized"}), 500
 
@@ -104,4 +104,5 @@ if __name__ == '__main__':
     
     print("Сессия проверена/создана. Запуск веб-сервера...")
     
-    app.run(host='0.0.0.0', port=5000)
+
+    app.run(host='0.0.0.0', port=5000)    # можно назначить другой порт
