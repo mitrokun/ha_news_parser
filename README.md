@@ -1,4 +1,4 @@
-## 1. Группы и каналы в тг
+## 1. Группы и каналы в telegram
 
 Не хотел тянуть новые зависимости в HA, а дополнение/контейнер для одного файла это перебор, поэтому запускаю сервер в одном из LXC контейнеров, но любой вариант с pip подойдет.
 
@@ -59,7 +59,7 @@ rest_command:
     timeout: 20
     content_type: 'application/json'
 ```
-Перезагрузитесь.
+*выполните перезагрузку*
 
 
 ### 4. Использование
@@ -87,4 +87,73 @@ action:
 ...
 
 ```
+
+## 2. RSS ленты через Shell Command
+
+
+### Шаг 1. Подготовка
+
+Создайте в File Editor или другим способом файл скрипта. У меня это `fetch_news.py` в каталоге `/config/scripts/`
+```python
+#!/usr/bin/env python3
+import feedparser
+import sys
+
+if len(sys.argv) > 1:
+    rss_url = sys.argv[1]
+else:
+    rss_url = "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+
+try:
+    if len(sys.argv) > 2:
+        limit = int(sys.argv[2])
+    else:
+        limit = 10
+except ValueError:
+    limit = 10
+
+feed = feedparser.parse(rss_url)
+
+news_list = []
+
+for i, entry in enumerate(feed.entries[:limit], 1):
+    title = entry.get("title", "")
+    description = entry.get("description", "")
+    
+    title = title.strip()
+    description = description.strip()
+
+    if description:
+        news_list.append(f"{i}. {title}. {description}")
+    else:
+        news_list.append(f"{i}. {title}")
+
+print("\n".join(news_list))
+```
+
+А в `configuration.yaml`  добавьте блок `shell_command` с указанием пути к файлу:
+
+```yaml
+shell_command:
+  fetch_news: 'python3 /config/scripts/fetch_news.py "{{ url }}" "{{ count }}"'
+```
+*выполните перезагрузку*
+
+#### Шаг 2. Использование в автоматизациях
+Теперь можно вызывать команду и забирать результат из переменной .
+
+**Пример автоматизации:**
+```yaml
+action:
+  - action: shell_command.fetch_news
+    data:
+      url: "https://feeds.skynews.com/feeds/rss/world.xml"
+      count: 5
+    response_variable: news_data
+
+```
+Результат будет доступен в переменной `{{ news_data.stdout }}`
+
+---
+
 Надеюсь, суть ясна. Если есть вопросы - скормите README llm и требуйте пояснений.
