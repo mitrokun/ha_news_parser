@@ -1,1 +1,90 @@
-# ha_news_parser
+## 1. Группы и каналы в тг
+
+Не хотел тянуть новые зависимости в HA, а дополнение/контейнер для одного файла это перебор, поэтому запускаю сервер в одном из LXC контейнеров, но любой вариант с pip подойдет.
+
+---
+
+### 1. Получение API ID и API Hash
+Эти данные нужны, чтобы ваш скрипт мог представляться как "приложение" Telegram.
+
+1. Зайдите на сайт **[my.telegram.org](https://my.telegram.org)**.
+2. Введите свой номер телефона, получите код в Telegram и войдите.
+3. Перейдите в раздел **API development tools**.
+4. Создайте новое приложение:
+   *   **App title:** любое (например, `HomeAssistantBot`).
+   *   **Short name:** любое (например, `habot`).
+   *   **Platform:** Desktop.
+5. Скопируйте **App api_id** и **App api_hash** и вставьте их в начало вашего Python-скрипта.
+
+---
+
+### 2. Установка (пример с venv)
+
+Допустим, что вы скопировали папку tg (с одним файлом) себе в домашнюю директорию.
+
+```
+cd /tg
+python3 -m venv venv
+source venv/bin/activate
+
+pip install --upgrade pip
+pip install quart telethon
+```
+
+Убедитесь, что в файле скрипта (`tele.py`) прописаны ваши `api_id` и `api_hash`.
+```
+python3 tele.py
+```
+*   При первом запуске скрипт попросит ввести номер телефона и код подтверждения.
+*   После ввода создастся файл `telegram_ha_session.session`.
+*   Сервер запустится.
+
+Достаточно в crontab автозапуск прописать и забыть. Например:
+```
+@reboot cd /home/user/tg && /home/user/tg/venv/bin/python tele.py > /home/user/tg/logfile.log 2>&1
+```
+
+---
+
+### 3. Настройка Home Assistant
+
+В  `configuration.yaml` добавьте новую запись в раздел `rest_command`
+
+```yaml
+rest_command:
+  get_telegram_messages_from_channel:
+    # Замените IP на адрес вашего сервера. Порт можно изменить в конце `tele.py`
+    url: "http://192.168.1.xxx:5000/get_messages?channel={{ channel }}&limit={{ limit | default(10) }}"
+    method: GET
+    timeout: 20
+    content_type: 'application/json'
+```
+Перезагрузитесь.
+
+
+### 4. Использование
+
+Теперь можно вызвать команду с требуемыми параметрами и получить результат в переменную, например для постобработки данных с помощью LLM:
+
+
+```yaml
+...
+
+action:
+  - action: rest_command.get_telegram_messages_from_channel
+    data:
+      channel: "@bbcrussian"
+      limit: 7
+    response_variable: tg_data
+  - action: conversation.process
+    metadata: {}
+    data:
+      text: >-
+        Изучи последние новости и подготовь очень краткий обзор.
+        Вот список новостей: {{ tg_data.content.messages }}
+      agent_id: conversation.gemini
+    response_variable: news
+...
+
+```
+Надеюсь, суть ясна. Если есть вопросы - скормите README llm и требуйте пояснений.
