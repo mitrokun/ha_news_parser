@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+#     "quart",
+#     "telethon",
+# ]
+# ///
+
 import re
 import asyncio
 from quart import Quart, jsonify, request
@@ -106,3 +113,4 @@ if __name__ == '__main__':
     
 
     app.run(host='0.0.0.0', port=5000)    # можно назначить другой порт
+
