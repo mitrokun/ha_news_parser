@@ -25,7 +25,7 @@
 Допустим, что вы скопировали папку tg (с одним файлом) себе в домашнюю директорию.
 
 ```
-cd /tg
+cd tg
 python3 -m venv venv
 source venv/bin/activate
 
